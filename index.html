@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>WebMIDI</title>
+    <script src="index.js"></script>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <h1>Web MIDI</h1>
+    <h2>Inputs</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>connection</th>
+          <th>id</th>
+          <th>manufacturer</th>
+          <th>name</th>
+          <th>state</th>
+          <th>type</th>
+          <th>version</th>
+        </tr>
+      </thead>
+      <tbody id="inputTbody"></tbody>
+    </table>
+    <h2>Ouputs</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>connection</th>
+          <th>id</th>
+          <th>manufacturer</th>
+          <th>name</th>
+          <th>state</th>
+          <th>type</th>
+          <th>version</th>
+        </tr>
+      </thead>
+      <tbody id="outputTbody"></tbody>
+    </table>
+    <h2>Messages</h2>
+    <pre id="messagesDiv"></pre>
+    <h2>Akai APC Mini</h2>
+    <input id="akaiApcMiniInput" placeholder="Enter your text" />
+    <br />
+    <canvas width="8" height="8" id="akaiApcMiniCanvas"></canvas>
+    <div id="akaiApcMiniDiv"></div>
+    <h2>Teenage Engineering OP-1</h2>
+    <div id="teenageEngineeringOp1Div"></div>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+th {
+  background: gray;
+  color: white;
+  padding: 1ex;
+  text-align: center;
+}
+
+td {
+  background: silver;
+  text-align: center;
+}
+
+canvas {
+  image-rendering: pixelated;
+  zoom: 10;
+}
