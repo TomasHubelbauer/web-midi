@@ -1,4 +1,12 @@
 window.addEventListener('load', async () => {
+  try {
+    await navigator.requestMIDIAccess();
+  }
+  catch (error) {
+    alert('Bummer, Web MIDI is not supported by your browser. Try Chrome or Edge.');
+    return;
+  }
+
   const midiAccess = await navigator.requestMIDIAccess();
   const ports = [...Array.from(midiAccess.inputs.values()), ...Array.from(midiAccess.outputs.values())];
 
