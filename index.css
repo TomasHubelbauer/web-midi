@@ -10,11 +10,19 @@ td {
   text-align: center;
 }
 
-img {
+#akaiApcMiniDiv img {
+  display: block;
   image-rendering: pixelated;
 }
 
-canvas {
+#akaiApcMiniDiv input {
+  display: block;
+  margin: 1ex 0;
+}
+
+#akaiApcMiniDiv canvas {
+  box-shadow: 0 0 .1ex rgba(0, 0, 0, .25);
+  display: block;
   image-rendering: pixelated;
   zoom: 10;
 }

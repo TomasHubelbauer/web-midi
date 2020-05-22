@@ -1,102 +1,129 @@
 window.addEventListener('load', async () => {
-  const inputTbody = document.getElementById('inputTbody');
-  const outputTbody = document.getElementById('outputTbody');
-  const messagesDiv = document.getElementById('messagesDiv');
-  const akaiApcMiniDiv = document.getElementById('akaiApcMiniDiv');
-  const teenageEngineeringOp1Div = document.getElementById('teenageEngineeringOp1Div');
-
   const midiAccess = await navigator.requestMIDIAccess();
-  midiAccess.addEventListener('statechange', () => render());
+  const ports = [...Array.from(midiAccess.inputs.values()), ...Array.from(midiAccess.outputs.values())];
 
-  let akaiApcMini;
-  let teenageEngineeringOp1;
+  const inputsDiv = document.getElementById('inputsDiv');
+  const inputs = new Inputs(ports, inputsDiv);
 
-  function render() {
-    inputTbody.innerHTML = '';
-    for (const key of midiAccess.inputs.keys()) {
-      const input = midiAccess.inputs.get(key);
-      input.addEventListener('statechange', () => render());
-      input.addEventListener('midimessage', event => handleMidiMessage(input, event.data));
+  const outputsDiv = document.getElementById('outputsDiv');
+  const outputs = new Outputs(ports, outputsDiv);
 
-      const inputTr = renderPortTr(input);
-      inputTbody.append(inputTr);
-    }
+  const akaiApcMiniDiv = document.getElementById('akaiApcMiniDiv');
+  const akaiApcMini = new AkaiApcMini(ports, akaiApcMiniDiv);
 
-    outputTbody.innerHTML = '';
-    for (const key of midiAccess.outputs.keys()) {
-      const output = midiAccess.outputs.get(key);
-      output.addEventListener('statechange', () => render());
-
-      const outputTr = renderPortTr(output);
-      outputTbody.append(outputTr);
-    }
-
-    const akaiApcMiniInput = Array.from(midiAccess.inputs.values()).find(i => i.manufacturer === 'AKAI  Professional M.I. Corp.' && i.name === 'APC MINI');
-    const akaiApcMiniOutput = Array.from(midiAccess.outputs.values()).find(i => i.manufacturer === 'AKAI  Professional M.I. Corp.' && i.name === 'APC MINI');
-    if (akaiApcMiniInput && akaiApcMiniOutput && !akaiApcMini) {
-      akaiApcMini = new AkaiApcMini(akaiApcMiniInput, akaiApcMiniOutput);
-    }
-
-
-    akaiApcMiniDiv.textContent = (akaiApcMiniInput && akaiApcMiniOutput) ? '' : 'Akai APC Mini is not connected.';
-    teenageEngineeringOp1Div.textContent = 'TODO';
-  }
-
-  function renderPortTr(port) {
-    const portTr = document.createElement('tr');
-
-    const connectionTd = document.createElement('td');
-    connectionTd.textContent = port.connection;
-    portTr.append(connectionTd);
-
-    const idTd = document.createElement('td');
-    idTd.textContent = port.id;
-    portTr.append(idTd);
-
-    const manufacturerTd = document.createElement('td');
-    manufacturerTd.textContent = port.manufacturer;
-    portTr.append(manufacturerTd);
-
-    const nameTd = document.createElement('td');
-    nameTd.textContent = port.name;
-    portTr.append(nameTd);
-
-    const stateTd = document.createElement('td');
-    stateTd.textContent = port.state;
-    portTr.append(stateTd);
-
-    const typeTd = document.createElement('td');
-    typeTd.textContent = port.type;
-    portTr.append(typeTd);
-
-    const versionTd = document.createElement('td');
-    versionTd.textContent = port.version;
-    portTr.append(versionTd);
-
-    return portTr;
-  }
-
-  function handleMidiMessage(input, data) {
-    const array = Array.from(data);
-    const dec = array.join(', ');
-    const hex = array.map(i => i.toString(16)).join(', ');
-    messagesDiv.textContent += `in: ${input.id} ${dec} (${hex})\n`;
-  }
-
-  render();
+  midiAccess.addEventListener('statechange', () => {
+    const ports = [...Array.from(midiAccess.inputs.values()), ...Array.from(midiAccess.outputs.values())];
+    inputs.render(ports);
+    outputs.render(ports);
+    akaiApcMini.render(ports);
+  });
 });
 
-class AkaiApcMini {
-  constructor(midiInput, midiOutput) {
-    this.midiInput = midiInput;
-    this.midiOutput = midiOutput;
-    this.input = document.getElementById('akaiApcMiniInput');
-    this.img = document.getElementById('akaiApcMiniImg');
-    this.code = document.getElementById('akaiApcMiniCode');
-    this.canvas = document.getElementById('akaiApcMiniCanvas');
+class Ports {
+  titles = ['connection', 'id', 'manufacturer', 'name', 'state', 'type', 'version'];
+  constructor(type, ports, element) {
+    this.type = type;
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    const tr = document.createElement('tr');
+    for (const title of this.titles) {
+      const th = document.createElement('th');
+      th.textContent = title;
+      tr.append(th);
+    }
 
-    // sprite.png
-    this.img.src = [
+    thead.append(tr);
+
+    this.tbody = document.createElement('tbody');
+
+    table.append(thead, this.tbody);
+    element.append(table);
+    this.render(ports);
+  }
+
+  render(ports) {
+    const tbody = document.createElement('tbody');
+    for (const port of ports) {
+      if (port.type !== this.type) {
+        continue;
+      }
+
+      const tr = document.createElement('tr');
+
+      const connectionTd = document.createElement('td');
+      connectionTd.textContent = port.connection;
+      tr.append(connectionTd);
+
+      const idTd = document.createElement('td');
+      idTd.textContent = port.id;
+      tr.append(idTd);
+
+      const manufacturerTd = document.createElement('td');
+      manufacturerTd.textContent = port.manufacturer;
+      tr.append(manufacturerTd);
+
+      const nameTd = document.createElement('td');
+      nameTd.textContent = port.name;
+      tr.append(nameTd);
+
+      const stateTd = document.createElement('td');
+      stateTd.textContent = port.state;
+      tr.append(stateTd);
+
+      const typeTd = document.createElement('td');
+      typeTd.textContent = port.type;
+      tr.append(typeTd);
+
+      const versionTd = document.createElement('td');
+      versionTd.textContent = port.version;
+      tr.append(versionTd);
+
+      tbody.append(tr);
+    }
+
+    this.tbody.replaceWith(tbody);
+    this.tbody = tbody;
+  }
+}
+
+class Inputs extends Ports {
+  constructor(ports, element) {
+    super('input', ports, element);
+  }
+}
+
+class Outputs extends Ports {
+  constructor(ports, element) {
+    super('output', ports, element);
+  }
+}
+
+class AkaiApcMini {
+  width = 8; // 8 columns on the launchpad button grid
+  height = 8; // 8 rows on the launchpad button grid
+
+  space = 1; // Space between the chars in the sprite
+  chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789☺:-()., ';
+  sizes = '44443344144355445443455554434444444451222121'.split('').map(Number);
+
+  black = [0, 0, 0, 255];
+  green = [0, 255, 0, 255];
+  red = [255, 0, 0, 255];
+  yellow = [255, 255, 0, 255];
+
+  colors = [this.green, this.green, this.green, this.red, this.red, this.red, this.yellow, this.yellow];
+  rgbaColors = { [this.black]: 0, [this.green]: 1, [this.red]: 3, [this.yellow]: 5 };
+
+  noScroll = -this.width; // Start scrolling from the right side not left side
+  scroll = this.noScroll;
+
+  rate = 75;
+
+  constructor(ports, element) {
+    this.ports = ports;
+
+    this.img = document.createElement('img');
+    this.img.src = [ // sprite.png
       'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAICAYAAAC8sLAqAAAAAXNSR0',
       'IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAAIBSURBVFhH7Zbbbg',
       'IxDES7/P8/b5nIB3mNszjJAn3okaLEk/GFUKRu+77/bNu2/9y5nzftxAJNVHxRO/P4OJ69Btldpg',
@@ -112,36 +139,44 @@ class AkaiApcMini {
       '',
     ].join('');
 
-    // Space between the chars in the sprite for legibility
-    this.space = 1;
-    this.width = 8;
-    this.height = 8;
-    this.chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789☺:-()., ';
-    this.sizes = '44443344144355445443455554434444444451222121'.split('').map(Number);
-    this.black = [0, 0, 0, 255];
-    this.green = [0, 255, 0, 255];
-    this.red = [255, 0, 0, 255];
-    this.yellow = [255, 255, 0, 255];
-    this.indexColors = [this.green, this.green, this.green, this.red, this.red, this.red, this.yellow, this.yellow];
-    this.rgbaColors = { [this.black]: 0, [this.green]: 1, [this.red]: 3, [this.yellow]: 5 };
-
+    this.input = document.createElement('input');
+    this.input.placeholder = 'Type text to marquee';
     this.input.pattern = this.chars;
-    this.code.textContent = this.chars;
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
-    this.context = this.canvas.getContext('2d');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = this.width;
+    canvas.height = this.height;
+
+    element.append(this.img, this.chars, this.input, canvas);
+
+    this.context = canvas.getContext('2d');
     this.context.imageSmoothingEnabled = false;
 
-    // Start scrolling from the right side not left side
-    this.noScroll = -this.width;
-    this.scroll = this.noScroll;
     this.render();
   }
 
-  render() {
-    this.scroll++;
 
+  manufacturer = 'AKAI  Professional M.I. Corp.';
+  name = 'APC MINI';
+
+  render(ports) {
+    // Clear the canvas here so it does not keep the last frame if disconnected
     this.context.clearRect(0, 0, this.width, this.height);
+
+    // Persist new ports unless called from the interval in which case reuse
+    this.ports = ports || this.ports;
+    const input = this.ports.find(p => p.type === 'input' && p.manufacturer === this.manufacturer && p.name === this.name);
+    const output = this.ports.find(p => p.type === 'output' && p.manufacturer === this.manufacturer && p.name === this.name);
+
+    if (!input || input.state === 'disconnected' || !output || output.state === 'disconnected') {
+      this.input.disabled = true;
+      return;
+    }
+    else {
+      this.input.disabled = false;
+    }
+
+    this.scroll++;
 
     /** @type {ImageData} */
     let imageData;
@@ -167,7 +202,7 @@ class AkaiApcMini {
           const index = y * this.width * 4 + x * 4;
           const rgba = imageData.data.slice(index, index + 4);
           if (this.rgbaColors[rgba] === 0) {
-            imageData.data.set(this.indexColors[color % this.indexColors.length], index);
+            imageData.data.set(this.colors[color % this.colors.length], index);
           }
         }
       }
@@ -188,9 +223,9 @@ class AkaiApcMini {
       // Flip index from launchpad left to right, bottom to top to canvas left to right, top to bottom
       const realIndex = (this.height - 1 - ~~(index / this.width)) * this.height + (index % this.width);
       const rgba = imageData.data.slice(realIndex * 4, realIndex * 4 + 4);
-      this.midiOutput.send([0x90, index, this.rgbaColors[rgba] || 0]);
+      output.send([0x90, index, this.rgbaColors[rgba] || 0]);
     }
 
-    window.setTimeout(() => this.render(), 75);
+    window.setTimeout(() => this.render(), this.rate);
   }
 }
