@@ -3,6 +3,10 @@
 In this repository I am experimenting with the JavaScript Web MIDI API to talk
 to various MIDI devices.
 
+## Running
+
+`npx serve .` because CORS does not work with `file://`.
+
 ## Akai APCmini Launchpad
 
 I've implemented two hacks both having to do with the launchpad grid button
@@ -15,7 +19,16 @@ this site in a Web MIDI supporting browser (Chrome, Edge).
 
 ### Fader Levels
 
+Turn off the marquee animation first using the stop button.
+
 [![](https://i3.ytimg.com/vi/XP5PGQ_B-Jg/maxresdefault.jpg)](https://www.youtube.com/watch?v=XP5PGQ_B-Jg)
+
+### Audio Visualizer
+
+Turn off the marquee animation first using the stop button and then click the
+document body to initiate playback.
+
+[![](https://i3.ytimg.com/vi/feNGAObR10Y/maxresdefault.jpg)](https://www.youtube.com/watch?v=feNGAObR10Y)
 
 ## To-Do
 

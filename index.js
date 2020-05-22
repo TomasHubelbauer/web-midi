@@ -135,21 +135,7 @@ class AkaiApcMini {
     this.ports = ports;
 
     this.img = document.createElement('img');
-    this.img.src = [ // sprite.png
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAICAYAAAC8sLAqAAAAAXNSR0',
-      'IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAAIBSURBVFhH7Zbbbg',
-      'IxDES7/P8/b5nIB3mNszjJAn3okaLEk/GFUKRu+77/bNu2/9y5nzftxAJNVHxRO/P4OJ69Btldpg',
-      'nF2rnz5+gj9j4fi5hjx7K351Ps76Im3qGb1MCD7nOEr5N5RvKgV6/qE5k2gvKVy27ygRuXGE1vTb',
-      '1W9Qk0Cw9xr847oId2kxpZX3zkmHz6Dl4XUfNeNJ39/g2Yyc+QzSriOXoyTaBb2MCHnuUSaykWmS',
-      '/ThL9vQgfydY41PDfbh6DwKqt1/If853pm33cmL/qv/G57f/wVpn4gf4GVB1TeyqPNMDKrn6/yOU',
-      'f98Mob74h93lk+M4HiqGW8muuMbK7ZWqL9QLLB0WaKZ7Xs+ID6FqYzXMHK4wjmqtSJXu1ozXARWT',
-      '160Vv4/vEuxlWyvF59v+uOhSZ09nEGOVo6R62ZCoz6RfuBqBmNAW20oMhq2fFBr5+FD3r95Z2ZDa',
-      'r5I3NlPvJXZq2g+lkfZmIXeC0s08uTpkVvYs7ae8TcDPpGH5qFT98JMXv0V5j6FysO8i3ig30Ses',
-      'cH9zOtzNarn+F95LWLD1Dt9YmZ+Ows/ybNMIhqdH8gWZOoiTPNwgO9Oj1G/PgsfImvV+0Tfdrt6o',
-      'noNflAxQN4/W5XwyifpZiaWmd18WgpruZlvkzL6PkyTWeWSSm6V67OvsZR27dfeX12KOVsFwkAAA',
-      'AASUVORK5CYII=',
-      '',
-    ].join('');
+    this.img.src = 'sprite.png';
 
     this.input = document.createElement('input');
     this.input.placeholder = 'Type text to marquee';
@@ -326,6 +312,39 @@ class AkaiApcMini {
     this.context.imageSmoothingEnabled = false;
 
     this.render();
+
+    window.document.body.addEventListener('click', () => {
+      const audio = document.createElement('audio');
+      audio.src = 'thefatrat-the-calling-feat-laura-brehm.mp3';
+      audio.play();
+
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaElementSource(audio);
+      const analyzer = audioContext.createAnalyser();
+      source.connect(analyzer);
+      analyzer.connect(audioContext.destination);
+
+      analyzer.fftSize = 32;
+      const data = new Uint8Array(analyzer.frequencyBinCount);
+      window.setInterval(() => {
+        analyzer.getByteTimeDomainData(data);
+        const levels = new Array(this.width);
+        for (let index = 0; index < data.length; index++) {
+          const bin = ~~((index / data.length) * levels.length);
+          if (!levels[bin]) {
+            levels[bin] = [];
+          }
+
+          levels[bin].push(data[index]);
+        }
+
+        for (let index = 0; index < this.width; index++) {
+          this.fade(48 + index, ((levels[index].reduce((a, c) => a + c, 0) / levels[index].length) / 255));
+        }
+      }, 100);
+    });
+
+
   }
 
   manufacturer = 'AKAI  Professional M.I. Corp.';
