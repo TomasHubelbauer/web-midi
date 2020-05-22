@@ -168,6 +168,18 @@ class AkaiApcMini {
       this.render();
     });
 
+    const marqueeFieldSet = document.createElement('fieldset');
+    const marqueeLegend = document.createElement('legend');
+    marqueeLegend.textContent = 'Marquee';
+    marqueeFieldSet.append(marqueeLegend, this.chars, this.img, this.input, this.marqueeButton, this.slideLeftButton, this.slideRightButton);
+
+    const fadersFieldset = document.createElement('fieldset');
+    const fadersLegend = document.createElement('legend');
+    fadersLegend.textContent = 'Faders';
+    const fadersP = document.createElement('p');
+    fadersP.textContent = 'Stop the Marquee animation and move the faders to see their columns display the level.';
+    fadersFieldset.append(fadersLegend, fadersP);
+
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('width', '23.5cm');
     svg.setAttribute('height', '19.9cm');
@@ -300,7 +312,7 @@ class AkaiApcMini {
       this.fade(48 + x, Math.random());
     }
 
-    element.append(this.chars, this.img, this.input, this.marqueeButton, this.slideLeftButton, this.slideRightButton, svg);
+    element.append(marqueeFieldSet, fadersFieldset, svg);
 
     this.context = canvas.getContext('2d');
     this.context.imageSmoothingEnabled = false;
@@ -315,6 +327,19 @@ class AkaiApcMini {
     this[`fader${number}-a`].setAttribute('y', `${14.8 + ratio * 2.7}cm`);
     this[`fader${number}-b`].setAttribute('y', `${15.3 + ratio * 2.7}cm`);
     this[`fader${number}-c`].setAttribute('y', `${15.51 + ratio * 2.7}cm`);
+    const output = this.ports.find(p => p.type === 'output' && p.manufacturer === this.manufacturer && p.name === this.name);
+    if (!output || output.state === 'disconnected' || number === 56) {
+      return;
+    }
+
+    const fader = number - 48;
+    const level = 7 - ~~(ratio * 7);
+    for (let index = 0; index < 8; index++) {
+      const rgbaColor = [this.green, this.green, this.green, this.yellow, this.yellow, this.yellow, this.red, this.red][index];
+      const color = this.rgbaColors[rgbaColor];
+      this[`button${fader + index * 8}`].setAttribute('fill', `rgba(${index <= level ? rgbaColor : this.none})`);
+      output.send([0x90, fader + index * 8, index <= level ? color : 0]);
+    }
   }
 
   render(ports) {
@@ -395,18 +420,20 @@ class AkaiApcMini {
       color++;
     }
 
-    // Reset scroll once it passes the length of the text which might change mid-scroll
-    if (this.scroll >= offset) {
-      // Start scrolling from the right side not left side
-      this.scroll = this.noScroll;
-    }
+    if (this.marquee) {
+      // Reset scroll once it passes the length of the text which might change mid-scroll
+      if (this.scroll >= offset) {
+        // Start scrolling from the right side not left side
+        this.scroll = this.noScroll;
+      }
 
-    for (let index = 0; index < this.width * this.height; index++) {
-      // Flip index from launchpad left to right, bottom to top to canvas left to right, top to bottom
-      const realIndex = (this.height - 1 - ~~(index / this.width)) * this.height + (index % this.width);
-      const rgba = imageData.data.slice(realIndex * 4, realIndex * 4 + 4);
-      output.send([0x90, index, this.rgbaColors[rgba] || 0]);
-      this[`button${index}`].setAttribute('fill', `rgba(${rgba.join() === this.none.toString() ? this.none : rgba})`);
+      for (let index = 0; index < this.width * this.height; index++) {
+        // Flip index from launchpad left to right, bottom to top to canvas left to right, top to bottom
+        const realIndex = (this.height - 1 - ~~(index / this.width)) * this.height + (index % this.width);
+        const rgba = imageData.data.slice(realIndex * 4, realIndex * 4 + 4);
+        output.send([0x90, index, this.rgbaColors[rgba] || 0]);
+        this[`button${index}`].setAttribute('fill', `rgba(${rgba.join() === this.none.toString() ? this.none : rgba})`);
+      }
     }
 
     this.timeout = window.setTimeout(() => {

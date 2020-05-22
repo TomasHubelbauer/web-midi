@@ -12,7 +12,6 @@ td {
 
 #akaiApcMiniDiv img {
   display: block;
-  image-rendering: pixelated;
 }
 
 #akaiApcMiniDiv button {
@@ -21,8 +20,4 @@ td {
 
 #akaiApcMiniDiv button:disabled {
   filter: grayscale();
-}
-
-#akaiApcMiniDiv svg {
-  display: block;
 }
