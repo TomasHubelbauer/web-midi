@@ -10,6 +10,10 @@ td {
   text-align: center;
 }
 
+img {
+  image-rendering: pixelated;
+}
+
 canvas {
   image-rendering: pixelated;
   zoom: 10;

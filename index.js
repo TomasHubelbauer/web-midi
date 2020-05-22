@@ -2,19 +2,14 @@ window.addEventListener('load', async () => {
   const inputTbody = document.getElementById('inputTbody');
   const outputTbody = document.getElementById('outputTbody');
   const messagesDiv = document.getElementById('messagesDiv');
-  const akaiApcMiniTextInput = document.getElementById('akaiApcMiniInput');
-  const akaiApcMiniCanvas = document.getElementById('akaiApcMiniCanvas');
   const akaiApcMiniDiv = document.getElementById('akaiApcMiniDiv');
   const teenageEngineeringOp1Div = document.getElementById('teenageEngineeringOp1Div');
 
   const midiAccess = await navigator.requestMIDIAccess();
   midiAccess.addEventListener('statechange', () => render());
 
-  let akaiApcMiniInput;
-  let akaiApcMiniOutput;
-  let akaiApcMiniRunning;
-
-  let teenageEngineeringOp1Input;
+  let akaiApcMini;
+  let teenageEngineeringOp1;
 
   function render() {
     inputTbody.innerHTML = '';
@@ -25,10 +20,6 @@ window.addEventListener('load', async () => {
 
       const inputTr = renderPortTr(input);
       inputTbody.append(inputTr);
-
-      if (input.manufacturer === 'AKAI  Professional M.I. Corp.' && input.name === 'APC MINI') {
-        akaiApcMiniInput = input;
-      }
     }
 
     outputTbody.innerHTML = '';
@@ -38,32 +29,16 @@ window.addEventListener('load', async () => {
 
       const outputTr = renderPortTr(output);
       outputTbody.append(outputTr);
-
-      if (output.manufacturer === 'AKAI  Professional M.I. Corp.' && output.name === 'APC MINI') {
-        akaiApcMiniOutput = output;
-      }
     }
 
-    if (akaiApcMiniInput) {
-      akaiApcMiniDiv.textContent = 'Akai APC Mini is connected.';
-    }
-    else {
-      akaiApcMiniDiv.textContent = 'Akai APC Mini is not connected.';
-    }
-
-    if (akaiApcMiniInput && akaiApcMiniOutput && !akaiApcMiniRunning) {
-      // akaiApcMiniOutput.send([0x90, 64, 2]);
-      // akaiApcMiniOutput.send([0x90, 65, 2]);
-      // akaiApcMiniOutput.send([0x90, 66, 2]);
-      // akaiApcMiniOutput.send([0x90, 67, 2]);
-      // akaiApcMiniOutput.send([0x90, 68, 2]);
-      // akaiApcMiniOutput.send([0x90, 69, 2]);
-      // akaiApcMiniOutput.send([0x90, 70, 2]);
-      // akaiApcMiniOutput.send([0x90, 71, 2]);
-      test();
-      akaiApcMiniRunning = true;
+    const akaiApcMiniInput = Array.from(midiAccess.inputs.values()).find(i => i.manufacturer === 'AKAI  Professional M.I. Corp.' && i.name === 'APC MINI');
+    const akaiApcMiniOutput = Array.from(midiAccess.outputs.values()).find(i => i.manufacturer === 'AKAI  Professional M.I. Corp.' && i.name === 'APC MINI');
+    if (akaiApcMiniInput && akaiApcMiniOutput && !akaiApcMini) {
+      akaiApcMini = new AkaiApcMini(akaiApcMiniInput, akaiApcMiniOutput);
     }
 
+
+    akaiApcMiniDiv.textContent = (akaiApcMiniInput && akaiApcMiniOutput) ? '' : 'Akai APC Mini is not connected.';
     teenageEngineeringOp1Div.textContent = 'TODO';
   }
 
@@ -106,46 +81,116 @@ window.addEventListener('load', async () => {
     const dec = array.join(', ');
     const hex = array.map(i => i.toString(16)).join(', ');
     messagesDiv.textContent += `in: ${input.id} ${dec} (${hex})\n`;
-
-    // Recognize Akai APC Mini messages
-    if (akaiApcMiniInput && array.length === 3) {
-      // TODO
-      switch (array[0]) {
-
-      }
-    }
-  }
-
-  let scroll = 0;
-  function test() {
-    scroll++;
-
-    const context = akaiApcMiniCanvas.getContext('2d', { alpha: false });
-    context.fillStyle = 'red';
-    context.fillRect(0, 0, 8, 8);
-    context.fillStyle = 'green';
-    const text = (akaiApcMiniTextInput.value || '(no text)').split('').join(' ');
-    const width = context.measureText(text).width;
-    context.fillText(text, -(scroll % width), 7);
-    context.fillText(text, -(scroll % width), 7);
-    context.fillText(text, -(scroll % width), 7);
-
-    const imageData = context.getImageData(0, 0, 8, 8);
-
-    for (let index = 0; index < 64; index++) {
-      // Flip index in the launchpad (left to right, bottom to top) to normal
-      const realIndex = (7 - ~~(index / 8)) * 8 + (index % 8);
-      const r = imageData.data[realIndex * 4 + 0];
-      const g = imageData.data[realIndex * 4 + 1];
-      const b = imageData.data[realIndex * 4 + 2];
-
-      const color = r > 200 ? 3 : 1;
-
-      akaiApcMiniOutput.send([0x90, index, color]);
-    }
-
-    window.setTimeout(test, 100);
   }
 
   render();
 });
+
+class AkaiApcMini {
+  constructor(midiInput, midiOutput) {
+    this.midiInput = midiInput;
+    this.midiOutput = midiOutput;
+    this.input = document.getElementById('akaiApcMiniInput');
+    this.img = document.getElementById('akaiApcMiniImg');
+    this.code = document.getElementById('akaiApcMiniCode');
+    this.canvas = document.getElementById('akaiApcMiniCanvas');
+
+    // sprite.png
+    this.img.src = [
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAAAICAYAAAC8sLAqAAAAAXNSR0',
+      'IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAAIBSURBVFhH7Zbbbg',
+      'IxDES7/P8/b5nIB3mNszjJAn3okaLEk/GFUKRu+77/bNu2/9y5nzftxAJNVHxRO/P4OJ69Btldpg',
+      'nF2rnz5+gj9j4fi5hjx7K351Ps76Im3qGb1MCD7nOEr5N5RvKgV6/qE5k2gvKVy27ygRuXGE1vTb',
+      '1W9Qk0Cw9xr847oId2kxpZX3zkmHz6Dl4XUfNeNJ39/g2Yyc+QzSriOXoyTaBb2MCHnuUSaykWmS',
+      '/ThL9vQgfydY41PDfbh6DwKqt1/If853pm33cmL/qv/G57f/wVpn4gf4GVB1TeyqPNMDKrn6/yOU',
+      'f98Mob74h93lk+M4HiqGW8muuMbK7ZWqL9QLLB0WaKZ7Xs+ID6FqYzXMHK4wjmqtSJXu1ozXARWT',
+      '160Vv4/vEuxlWyvF59v+uOhSZ09nEGOVo6R62ZCoz6RfuBqBmNAW20oMhq2fFBr5+FD3r95Z2ZDa',
+      'r5I3NlPvJXZq2g+lkfZmIXeC0s08uTpkVvYs7ae8TcDPpGH5qFT98JMXv0V5j6FysO8i3ig30Ses',
+      'cH9zOtzNarn+F95LWLD1Dt9YmZ+Ows/ybNMIhqdH8gWZOoiTPNwgO9Oj1G/PgsfImvV+0Tfdrt6o',
+      'noNflAxQN4/W5XwyifpZiaWmd18WgpruZlvkzL6PkyTWeWSSm6V67OvsZR27dfeX12KOVsFwkAAA',
+      'AASUVORK5CYII=',
+      '',
+    ].join('');
+
+    // Space between the chars in the sprite for legibility
+    this.space = 1;
+    this.width = 8;
+    this.height = 8;
+    this.chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789☺:-()., ';
+    this.sizes = '44443344144355445443455554434444444451222121'.split('').map(Number);
+    this.black = [0, 0, 0, 255];
+    this.green = [0, 255, 0, 255];
+    this.red = [255, 0, 0, 255];
+    this.yellow = [255, 255, 0, 255];
+    this.indexColors = [this.green, this.green, this.green, this.red, this.red, this.red, this.yellow, this.yellow];
+    this.rgbaColors = { [this.black]: 0, [this.green]: 1, [this.red]: 3, [this.yellow]: 5 };
+
+    this.input.pattern = this.chars;
+    this.code.textContent = this.chars;
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
+    this.context = this.canvas.getContext('2d');
+    this.context.imageSmoothingEnabled = false;
+
+    // Start scrolling from the right side not left side
+    this.noScroll = -this.width;
+    this.scroll = this.noScroll;
+    this.render();
+  }
+
+  render() {
+    this.scroll++;
+
+    this.context.clearRect(0, 0, this.width, this.height);
+
+    /** @type {ImageData} */
+    let imageData;
+
+    let offset = 0;
+    let color = 0;
+    for (const char of this.input.value || new Date().toISOString().slice(11, 19)) {
+      if (!this.chars.includes(char)) {
+        continue;
+      }
+
+      const index = this.chars.indexOf(char);
+      const shift = this.sizes.slice(0, index).reduce((a, c) => a + c + this.space, 0);
+      const size = this.sizes[index];
+
+      // Draw the black glyph from the sprite
+      this.context.drawImage(this.img, shift, 0, size, this.height, -this.scroll + offset, 0, size, this.height);
+
+      // Color the black glyph the current color
+      imageData = this.context.getImageData(0, 0, this.width, this.height);
+      for (let x = 0; x < this.width; x++) {
+        for (let y = 0; y < this.height; y++) {
+          const index = y * this.width * 4 + x * 4;
+          const rgba = imageData.data.slice(index, index + 4);
+          if (this.rgbaColors[rgba] === 0) {
+            imageData.data.set(this.indexColors[color % this.indexColors.length], index);
+          }
+        }
+      }
+
+      this.context.putImageData(imageData, 0, 0);
+
+      offset += size + this.space;
+      color++;
+    }
+
+    // Reset scroll once it passes the length of the text which might change mid-scroll
+    if (this.scroll >= offset) {
+      // Start scrolling from the right side not left side
+      this.scroll = this.noScroll;
+    }
+
+    for (let index = 0; index < this.width * this.height; index++) {
+      // Flip index from launchpad left to right, bottom to top to canvas left to right, top to bottom
+      const realIndex = (this.height - 1 - ~~(index / this.width)) * this.height + (index % this.width);
+      const rgba = imageData.data.slice(realIndex * 4, realIndex * 4 + 4);
+      this.midiOutput.send([0x90, index, this.rgbaColors[rgba] || 0]);
+    }
+
+    window.setTimeout(() => this.render(), 75);
+  }
+}
