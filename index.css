@@ -15,14 +15,14 @@ td {
   image-rendering: pixelated;
 }
 
-#akaiApcMiniDiv input {
-  display: block;
-  margin: 1ex 0;
+#akaiApcMiniDiv button {
+  cursor: pointer;
 }
 
-#akaiApcMiniDiv canvas {
-  box-shadow: 0 0 .1ex rgba(0, 0, 0, .25);
+#akaiApcMiniDiv button:disabled {
+  filter: grayscale();
+}
+
+#akaiApcMiniDiv svg {
   display: block;
-  image-rendering: pixelated;
-  zoom: 10;
 }

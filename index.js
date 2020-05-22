@@ -106,18 +106,22 @@ class AkaiApcMini {
   chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789☺:-()., ';
   sizes = '44443344144355445443455554434444444451222121'.split('').map(Number);
 
-  black = [0, 0, 0, 255];
+  none = [129, 129, 129, 255];
   green = [0, 255, 0, 255];
   red = [255, 0, 0, 255];
   yellow = [255, 255, 0, 255];
 
   colors = [this.green, this.green, this.green, this.red, this.red, this.red, this.yellow, this.yellow];
-  rgbaColors = { [this.black]: 0, [this.green]: 1, [this.red]: 3, [this.yellow]: 5 };
+  rgbaColors = { [this.green]: 1, [this.red]: 3, [this.yellow]: 5 };
 
   noScroll = -this.width; // Start scrolling from the right side not left side
   scroll = this.noScroll;
+  marquee = true;
+  timeout = undefined;
 
-  rate = 75;
+  rate = 100;
+
+  listener = undefined;
 
   constructor(ports, element) {
     this.ports = ports;
@@ -147,7 +151,158 @@ class AkaiApcMini {
     canvas.width = this.width;
     canvas.height = this.height;
 
-    element.append(this.img, this.chars, this.input, canvas);
+    this.marqueeButton = document.createElement('button');
+    this.marqueeButton.addEventListener('click', () => this.marquee = !this.marquee);
+
+    this.slideLeftButton = document.createElement('button');
+    this.slideLeftButton.textContent = '⏪️';
+    this.slideLeftButton.addEventListener('click', () => {
+      this.scroll++;
+      this.render();
+    });
+
+    this.slideRightButton = document.createElement('button');
+    this.slideRightButton.textContent = '⏩️';
+    this.slideRightButton.addEventListener('click', () => {
+      this.scroll--;
+      this.render();
+    });
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '23.5cm');
+    svg.setAttribute('height', '19.9cm');
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', '2mm');
+    rect.setAttribute('y', '2mm');
+    rect.setAttribute('width', '23.1cm');
+    rect.setAttribute('height', '19.5cm');
+    rect.setAttribute('rx', '6mm');
+    rect.setAttribute('stroke', 'black');
+    rect.setAttribute('stroke-width', '2mm');
+    rect.setAttribute('fill', '#333');
+    svg.append(rect);
+
+    for (let x = 0; x < 8; x++) {
+      for (let y = 0; y < 8; y++) {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', `${6 + 25 * x}mm`);
+        rect.setAttribute('y', `${19.5 + 13.75 * y}mm`);
+        rect.setAttribute('width', '21mm');
+        rect.setAttribute('height', '1cm');
+        rect.setAttribute('rx', '.5mm');
+        rect.setAttribute('stroke', 'black');
+        rect.setAttribute('stroke-width', '.5mm');
+        rect.setAttribute('fill', '#777');
+        svg.append(rect);
+
+        this[`button${(7 - y) * this.width + x}`] = rect;
+      }
+    }
+
+    for (let y = 0; y < 8; y++) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', '21.2cm');
+      rect.setAttribute('y', `${19.5 + 13.75 * y}mm`);
+      rect.setAttribute('width', '1cm');
+      rect.setAttribute('height', '1cm');
+      rect.setAttribute('rx', '5mm');
+      rect.setAttribute('stroke', 'black');
+      rect.setAttribute('stroke-width', '.5mm');
+      rect.setAttribute('fill', '#777');
+      svg.append(rect);
+    }
+
+
+
+    for (let x = 0; x < 8; x++) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', `${12.5 + 25 * x}mm`);
+      rect.setAttribute('y', '13cm');
+      rect.setAttribute('width', '1cm');
+      rect.setAttribute('height', '1cm');
+      rect.setAttribute('rx', '5mm');
+      rect.setAttribute('stroke', 'black');
+      rect.setAttribute('stroke-width', '.5mm');
+      rect.setAttribute('fill', '#777');
+      svg.append(rect);
+    }
+
+    {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', `${12.5 + 25 * 8}mm`);
+      rect.setAttribute('y', `${19.5 + 13.75 * 8}mm`);
+      rect.setAttribute('width', '1cm');
+      rect.setAttribute('height', '1cm');
+      rect.setAttribute('stroke', 'black');
+      rect.setAttribute('stroke-width', '.5mm');
+      rect.setAttribute('fill', '#777');
+      svg.append(rect);
+    }
+
+    for (let x = 0; x < 9; x++) {
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', `${6 + 25 * x}mm`);
+      rect.setAttribute('y', '14.5cm');
+      rect.setAttribute('width', '2.1cm');
+      rect.setAttribute('height', '4.8cm');
+      rect.setAttribute('rx', '1mm');
+      rect.setAttribute('stroke', 'black');
+      rect.setAttribute('stroke-width', '1mm');
+      rect.setAttribute('fill', '#333');
+      svg.append(rect);
+
+      {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', `${6 + 25 * x + 9}mm`);
+        rect.setAttribute('y', '15.1cm');
+        rect.setAttribute('width', '3mm');
+        rect.setAttribute('height', '37mm');
+        rect.setAttribute('rx', '.1mm');
+        svg.append(rect);
+      }
+
+      let fader = 0;
+
+      {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', `${6 + 25 * x + 3}mm`);
+        rect.setAttribute('y', `${14.8 + fader * 2.7}cm`);
+        rect.setAttribute('width', '1.5cm');
+        rect.setAttribute('height', '1.5cm');
+        rect.setAttribute('rx', '1mm');
+        rect.setAttribute('stroke', 'black');
+        rect.setAttribute('stroke-width', '.5mm');
+        rect.setAttribute('fill', '#222');
+        svg.append(rect);
+        this[`fader${48 + x}-a`] = rect;
+      }
+
+      {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', `${6 + 25 * x + 3}mm`);
+        rect.setAttribute('y', `${15.3 + fader * 2.7}cm`);
+        rect.setAttribute('width', '1.5cm');
+        rect.setAttribute('height', '.5cm');
+        rect.setAttribute('rx', '1mm');
+        svg.append(rect);
+        this[`fader${48 + x}-b`] = rect;
+      }
+
+      {
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', `${6 + 25 * x + 3}mm`);
+        rect.setAttribute('y', `${15.51 + fader * 2.7}cm`);
+        rect.setAttribute('width', '1.5cm');
+        rect.setAttribute('height', '1mm');
+        rect.setAttribute('rx', '.5mm');
+        rect.setAttribute('fill', '#ddd');
+        svg.append(rect);
+        this[`fader${48 + x}-c`] = rect;
+      }
+    }
+
+    element.append(this.chars, this.img, this.input, this.marqueeButton, this.slideLeftButton, this.slideRightButton, svg);
 
     this.context = canvas.getContext('2d');
     this.context.imageSmoothingEnabled = false;
@@ -155,13 +310,28 @@ class AkaiApcMini {
     this.render();
   }
 
-
   manufacturer = 'AKAI  Professional M.I. Corp.';
   name = 'APC MINI';
 
+  fade(number, ratio) {
+    this[`fader${number}-a`].setAttribute('y', `${14.8 + ratio * 2.7}cm`);
+    this[`fader${number}-b`].setAttribute('y', `${15.3 + ratio * 2.7}cm`);
+    this[`fader${number}-c`].setAttribute('y', `${15.51 + ratio * 2.7}cm`);
+  }
+
   render(ports) {
+    // Ditch the render attempt as the animation going on will take care of it
+    if (this.timeout) {
+      return;
+    }
+
+    for (let index = 48; index < 48 + 9; index++) {
+      this.fade(index, Math.random());
+    }
+
     // Clear the canvas here so it does not keep the last frame if disconnected
-    this.context.clearRect(0, 0, this.width, this.height);
+    this.context.fillStyle = `rgb(${this.none.slice(0, 3)})`;
+    this.context.fillRect(0, 0, this.width, this.height);
 
     // Persist new ports unless called from the interval in which case reuse
     this.ports = ports || this.ports;
@@ -170,13 +340,27 @@ class AkaiApcMini {
 
     if (!input || input.state === 'disconnected' || !output || output.state === 'disconnected') {
       this.input.disabled = true;
+      this.marqueeButton.disabled = true;
+      this.marqueeButton.textContent = 'AKAI APCmini is not connected.';
       return;
     }
     else {
       this.input.disabled = false;
+      this.marqueeButton.disabled = false;
+      this.marqueeButton.textContent = this.marquee ? '⏹️' : '▶️';
     }
 
-    this.scroll++;
+    if (this.listener !== input) {
+      this.listener = input;
+      input.addEventListener('midimessage', ({ data }) => console.log(data));
+    }
+
+    this.slideLeftButton.disabled = this.marquee;
+    this.slideRightButton.disabled = this.marquee;
+
+    if (this.marquee) {
+      this.scroll++;
+    }
 
     /** @type {ImageData} */
     let imageData;
@@ -201,7 +385,7 @@ class AkaiApcMini {
         for (let y = 0; y < this.height; y++) {
           const index = y * this.width * 4 + x * 4;
           const rgba = imageData.data.slice(index, index + 4);
-          if (this.rgbaColors[rgba] === 0) {
+          if (rgba.toString() === '0,0,0,255') {
             imageData.data.set(this.colors[color % this.colors.length], index);
           }
         }
@@ -224,8 +408,12 @@ class AkaiApcMini {
       const realIndex = (this.height - 1 - ~~(index / this.width)) * this.height + (index % this.width);
       const rgba = imageData.data.slice(realIndex * 4, realIndex * 4 + 4);
       output.send([0x90, index, this.rgbaColors[rgba] || 0]);
+      this[`button${index}`].setAttribute('fill', `rgba(${rgba.join() === this.none.toString() ? this.none : rgba})`);
     }
 
-    window.setTimeout(() => this.render(), this.rate);
+    this.timeout = window.setTimeout(() => {
+      this.timeout = undefined;
+      this.render();
+    }, this.rate);
   }
 }
