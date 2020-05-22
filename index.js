@@ -119,7 +119,7 @@ class AkaiApcMini {
   marquee = true;
   timeout = undefined;
 
-  rate = 100;
+  rate = 250;
 
   listener = undefined;
 
@@ -213,8 +213,6 @@ class AkaiApcMini {
       svg.append(rect);
     }
 
-
-
     for (let x = 0; x < 8; x++) {
       const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       rect.setAttribute('x', `${12.5 + 25 * x}mm`);
@@ -262,12 +260,10 @@ class AkaiApcMini {
         svg.append(rect);
       }
 
-      let fader = 0;
-
       {
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', `${6 + 25 * x + 3}mm`);
-        rect.setAttribute('y', `${14.8 + fader * 2.7}cm`);
+        rect.setAttribute('y', '14.8cm');
         rect.setAttribute('width', '1.5cm');
         rect.setAttribute('height', '1.5cm');
         rect.setAttribute('rx', '1mm');
@@ -281,7 +277,7 @@ class AkaiApcMini {
       {
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', `${6 + 25 * x + 3}mm`);
-        rect.setAttribute('y', `${15.3 + fader * 2.7}cm`);
+        rect.setAttribute('y', '15.3cm');
         rect.setAttribute('width', '1.5cm');
         rect.setAttribute('height', '.5cm');
         rect.setAttribute('rx', '1mm');
@@ -292,7 +288,7 @@ class AkaiApcMini {
       {
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         rect.setAttribute('x', `${6 + 25 * x + 3}mm`);
-        rect.setAttribute('y', `${15.51 + fader * 2.7}cm`);
+        rect.setAttribute('y', '15.51cm');
         rect.setAttribute('width', '1.5cm');
         rect.setAttribute('height', '1mm');
         rect.setAttribute('rx', '.5mm');
@@ -300,6 +296,8 @@ class AkaiApcMini {
         svg.append(rect);
         this[`fader${48 + x}-c`] = rect;
       }
+
+      this.fade(48 + x, Math.random());
     }
 
     element.append(this.chars, this.img, this.input, this.marqueeButton, this.slideLeftButton, this.slideRightButton, svg);
@@ -325,10 +323,6 @@ class AkaiApcMini {
       return;
     }
 
-    for (let index = 48; index < 48 + 9; index++) {
-      this.fade(index, Math.random());
-    }
-
     // Clear the canvas here so it does not keep the last frame if disconnected
     this.context.fillStyle = `rgb(${this.none.slice(0, 3)})`;
     this.context.fillRect(0, 0, this.width, this.height);
@@ -352,7 +346,11 @@ class AkaiApcMini {
 
     if (this.listener !== input) {
       this.listener = input;
-      input.addEventListener('midimessage', ({ data }) => console.log(data));
+      input.addEventListener('midimessage', ({ data }) => {
+        if (data[0] === 176) {
+          this.fade(data[1], 1 - data[2] / 127);
+        }
+      });
     }
 
     this.slideLeftButton.disabled = this.marquee;
