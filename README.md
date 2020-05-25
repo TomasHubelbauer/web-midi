@@ -49,3 +49,5 @@ The SVG 3D projector repo of mine is called `svg-3d`.
 ### Implement Snake or Etch-a-sketch or something silly like that
 
 ### Implement a spectrum visualizer using the grid and Web Audio API
+
+### Add tests by mocking the devices
