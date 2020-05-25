@@ -1,7 +1,7 @@
-import Inputs from './devices/Inputs.js';
-import Outputs from './devices/Outputs.js';
-import AkaiApcMini from './devices/AkaiApcMini.js';
-import NovationLaunchpadMini from './devices/NovationLaunchpadMini.js';
+import Inputs from './drivers/Inputs.js';
+import Outputs from './drivers/Outputs.js';
+import AkaiApcMini from './drivers/AkaiApcMini.js';
+import NovationLaunchpadMini from './drivers/NovationLaunchpadMini.js';
 
 window.addEventListener('load', async () => {
   try {
